@@ -16,7 +16,7 @@ function initConnection() {
   closeConnection();
   const token = localStorage.getItem('token');
 
-  ws = new WebSocket(`ws://localhost:3000${!token ? '' : `/?at=${token}`}`);
+  ws = new WebSocket(`ws://agrazmonitoreoroca.onrender.com${!token ? '' : `/?at=${token}`}`);
 
   ws.addEventListener('error', () => {
     showMessage('WebSocket error');
