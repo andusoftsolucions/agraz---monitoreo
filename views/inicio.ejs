@@ -1,0 +1,308 @@
+<div class="container">
+  <div class="row stat-cards">
+    <div class="col-md-6 col-xl-3">
+      <article class="stat-cards-item">
+        <div class="stat-cards-icon primary">
+          <i data-feather="feather" aria-hidden="true"></i>
+        </div>
+        <div class="stat-cards-info">
+          <p class="stat-cards-info__num">Indicador PH</p>
+          <p class="stat-cards-info__title" id="ph"></p>
+        </div>
+      </article>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <article class="stat-cards-item">
+        <div class="stat-cards-icon warning">
+          <i data-feather="droplet" aria-hidden="true"></i>
+        </div>
+        <div class="stat-cards-info">
+          <p class="stat-cards-info__num">Humedad</p>
+          <p class="stat-cards-info__title" id="humidity"></p>
+        </div>
+      </article>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <article class="stat-cards-item">
+        <div class="stat-cards-icon purple">
+          <i data-feather="alert-circle" aria-hidden="true"></i>
+        </div>
+        <div class="stat-cards-info">
+          <p class="stat-cards-info__num">Nivel alerta</p>
+          <p class="stat-cards-info__title" id="nivel"></p>
+        </div>
+      </article>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <article class="stat-cards-item">
+        <div class="stat-cards-icon success">
+          <i data-feather="activity" aria-hidden="true"></i>
+        </div>
+        <div class="stat-cards-info">
+          <p class="stat-cards-info__num">Riego</p>
+          <p class="stat-cards-info__title" id="riego"></p>
+        </div>
+      </article>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-9">
+      <div class="chart">
+        <canvas id="myChart" aria-label="Site statistics" role="img"></canvas>
+      </div>
+      <div class="chart">
+        <canvas id="myChart1" aria-label="Site statistics" role="img"></canvas>
+      </div>
+      <div class="chart">
+        <canvas id="myBarChart" aria-label="Site statistics" role="img"></canvas>
+        <div id="SelectorDataSensor">
+          <label for="rango">Selecciona el rango de consulta: </label>
+          <select id="rango">
+            <option value="hoy">Hoy</option>
+            <option value="semana">Esta semana</option>
+            <option value="mes">Este mes</option>
+          </select>
+          <button id="actualizarButton">Actualizar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Variables para los gráficos
+  var myChart1 = null;
+  var myChart2 = null;
+  var myBarChart = null;
+
+  // Función para crear la gráfica de barras
+  function createBarChart(labels, datasets, maxY) {
+    var ctx = document.getElementById('myBarChart').getContext('2d');
+    myBarChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: datasets
+      },
+      options: {
+        scales: {
+          y: {
+            min: 0,
+            max: maxY, // Establecer el valor máximo del eje Y
+            ticks: {
+              stepSize: 1
+            },
+            grid: {
+              display: false
+            }
+          },
+          x: {
+            ticks: {
+              stepSize: 2
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Función para obtener datos del servidor según el rango seleccionado
+  async function obtenerDatos(rango) {
+    try {
+      const response = await fetch(`/dataSensors?range=${rango}`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error al obtener datos:', error);
+      return null;
+    }
+  }
+
+  // Función para actualizar la gráfica de barras según el rango seleccionado
+  async function actualizarGrafico(rango) {
+    const datos = await obtenerDatos(rango);
+
+    if (datos) {
+      const labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+      const datasets = Object.keys(datos).map(dia => ({
+        label: dia.charAt(0).toUpperCase() + dia.slice(1),
+        data: datos[dia],
+        backgroundColor: 'rgba(75, 192, 192, 0.5)'
+      }));
+
+      // Encontrar el valor máximo en los datos
+      const maxValor = Math.max(...Object.values(datos).flat());
+
+      if (myBarChart) {
+        myBarChart.destroy();
+      }
+
+      createBarChart(labels, datasets, maxValor);
+    } else {
+      console.error('No se pudieron actualizar los datos del gráfico');
+    }
+  }
+
+  // Crear la gráfica de barras una vez al cargar el documento
+  document.addEventListener("DOMContentLoaded", function() {
+    actualizarGrafico('hoy');
+  });
+
+  // Manejar clic en el botón de actualización
+  document.getElementById('actualizarButton').addEventListener('click', function() {
+    var rangoSeleccionado = document.getElementById('rango').value;
+    actualizarGrafico(rangoSeleccionado);
+  });
+
+  // Manejar la visibilidad de la página
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+      if (myChart1) {
+        myChart1.update();
+      }
+      if (myChart2) {
+        myChart2.update();
+      }
+      if (myBarChart) {
+        myBarChart.update();
+      }
+    }
+  });
+
+  // inicio codigo graficos ph y humedad /////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////
+
+  const storedData = localStorage.getItem("chartData");
+  const chartData = storedData ? JSON.parse(storedData) : {
+    labels: [],
+    tdsData: [],
+    phData: []
+  };
+
+  // Función para crear los gráficos
+  function createCharts() {
+    // Destruir gráficos existentes si existen
+    if (myChart1) {
+      myChart1.destroy();
+    }
+    if (myChart2) {
+      myChart2.destroy();
+    }
+
+    var ctx1 = document.getElementById("myChart").getContext("2d");
+    myChart1 = new Chart(ctx1, {
+      type: "line",
+      data: {
+        labels: chartData.labels,
+        datasets: [{
+          label: "Humedad",
+          data: chartData.tdsData,
+          backgroundColor: "rgba(0, 156, 255, .7)",
+          borderColor: "rgba(95, 46, 234, 1)",
+          borderWidth: 2,
+          tension: 0.4
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            min: 0,
+            max: 100,
+            ticks: {
+              stepSize: 25
+            },
+            grid: {
+              display: false
+            }
+          }
+        },
+        elements: {
+          point: {
+            radius: 2
+          }
+        }
+      }
+    });
+
+    var ctx2 = document.getElementById("myChart1").getContext("2d");
+    myChart2 = new Chart(ctx2, {
+      type: "line",
+      data: {
+        labels: chartData.labels,
+        datasets: [{
+          label: "pH",
+          data: chartData.phData,
+          backgroundColor: "rgba(75, 222, 151, 1)",
+          borderColor: "rgba(75, 222, 151, 1)",
+          borderWidth: 2,
+          tension: 0.4,
+          // fill: true
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            min: 0,
+            max: 10,
+            ticks: {
+              stepSize: 2
+            },
+            grid: {
+              display: false
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Crear los gráficos una vez al cargar el documento
+  document.addEventListener("DOMContentLoaded", function () {
+    createCharts();
+  });
+
+  // Manejar los datos del WebSocket
+  document.addEventListener("websocketData", function (event) {
+    const data = event.detail;
+    const humedadElemento = document.querySelector('#humidity');
+    const nielElemento = document.querySelector('#nivel');
+    const temperaturaAmbte = document.querySelector('#ph');
+    const RiegoEstado = document.querySelector('#riego');
+
+    // Actualizar los valores en el elemento HTML
+    temperaturaAmbte.textContent = `${data.sensors.ph}`;
+    humedadElemento.textContent = `${data.sensors.Humidity} %`;
+    nielElemento.textContent = `${data.sensors.Level}`;
+    RiegoEstado.textContent = `${data.sensors.Riego}`;
+
+    const currentDate = new Date();
+    chartData.labels.push(currentDate.toLocaleTimeString());
+
+    // Agregar los nuevos datos de EC y pH a los datasets correspondientes
+    chartData.tdsData.push(data.sensors.Humidity);
+    chartData.phData.push(data.sensors.ph);
+
+    // Limitar la cantidad de etiquetas mostradas en los gráficos
+    const maxLabels = 10; // Ajusta según el número deseado de etiquetas visibles
+    if (chartData.labels.length > maxLabels) {
+      chartData.labels.shift();
+      chartData.tdsData.shift();
+      chartData.phData.shift();
+    }
+
+    // Actualizar los gráficos
+    if (myChart1) {
+      myChart1.data.labels = chartData.labels.slice();
+      myChart1.data.datasets[0].data = chartData.tdsData.slice();
+      myChart1.update();
+    }
+
+    if (myChart2) {
+      myChart2.data.labels = chartData.labels.slice();
+      myChart2.data.datasets[0].data = chartData.phData.slice();
+      myChart2.update();
+    }
+
+    localStorage.setItem("chartData", JSON.stringify(chartData));
+  });
+</script>
