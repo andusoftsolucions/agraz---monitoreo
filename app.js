@@ -40,7 +40,7 @@ app.use(auth);
 app.use(views.routers);
 
 
-setupBot(process.env.TelegramToken);
+ setupBot(process.env.TelegramToken);
 
 configureSockets(app.listen(port, () => {
   console.log(`Listening on port ${port}`);

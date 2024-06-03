@@ -4,7 +4,6 @@ const User = require('./models/users.js');
 const { sendNotification } = require('./bot.js');
 const { guardarRegistro } = require('./models/Sensors.js');
 
-
 function onSocketPreError(e) {
     console.log(e);
 }
@@ -33,15 +32,21 @@ function configure(s) {
         const url = new URL(req.url, `ws://${req.headers.host}`);
         const at = url.searchParams.get('at');
     
-        if (!authenticate(at)) {
-            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-            socket.destroy();
-            return;
-        }
+        authenticate(at).then(isValid => {
+            if (!isValid) {
+                socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+                socket.destroy();
+                return;
+            }
     
-        wss.handleUpgrade(req, socket, head, (ws) => {
-            socket.removeListener('error', onSocketPreError);
-            wss.emit('connection', ws, req);
+            wss.handleUpgrade(req, socket, head, (ws) => {
+                socket.removeListener('error', onSocketPreError);
+                wss.emit('connection', ws, req);
+            });
+        }).catch(err => {
+            console.error('Authentication error:', err);
+            socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+            socket.destroy();
         });
     });
 
@@ -70,34 +75,39 @@ function configure(s) {
             console.log('New ESP32 connection with token:');
             
             ws.on('message', async (mensaje) => {
-                const data = JSON.parse(mensaje);
-                console.log('Mensaje recibido de la ESP32:', data);
-                const mensajeJSON = JSON.stringify(data);
+                try {
+                    const data = JSON.parse(mensaje);
+                    console.log('Mensaje recibido de la ESP32:', data);
+                    const mensajeJSON = JSON.stringify(data);
 
-                // Enviar el mensaje a cada uno de los clientes conectados
-                webClients.forEach(client => client.send(mensajeJSON));
+                    // Enviar el mensaje a cada uno de los clientes conectados
+                    webClients.forEach(client => client.send(mensajeJSON));
 
-                const { humidity, ph, Riego } = data.sensors;
-                const currentTime = Date.now();
+                    const { humidity, ph, Riego } = data.sensors;
+                    const currentTime = Date.now();
 
-                // Notificaciones de humedad
-                if ((humidity > 85 || humidity < 70) && currentTime - lastNotificationTime.humidity > NOTIFICATION_INTERVAL) {
-                    const humedadtext = `La humedad está en un valor crítico: ${humidity}`;
-                    await notifyAllUsers(humedadtext);
-                    lastNotificationTime.humidity = currentTime;
-                }
+                    // Notificaciones de humedad
+                    if ((humidity > 85 || humidity < 70) && currentTime - lastNotificationTime.humidity > NOTIFICATION_INTERVAL) {
+                        const humedadtext = `La humedad está en un valor crítico: ${humidity}`;
+                        await notifyAllUsers(humedadtext);
+                        lastNotificationTime.humidity = currentTime;
+                    }
 
-                // Notificaciones de pH
-                if ((ph > 8 || ph < 6) && currentTime - lastNotificationTime.ph > NOTIFICATION_INTERVAL) {
-                    const phtext = `El pH está en un valor crítico: ${ph}`;
-                    await notifyAllUsers(phtext);
-                    lastNotificationTime.ph = currentTime;
-                }
+                    // Notificaciones de pH
+                    if ((ph > 8 || ph < 6) && currentTime - lastNotificationTime.ph > NOTIFICATION_INTERVAL) {
+                        const phtext = `El pH está en un valor crítico: ${ph}`;
+                        await notifyAllUsers(phtext);
+                        lastNotificationTime.ph = currentTime;
+                    }
 
-                // Registro de activación de riego
-                if (Riego === 'Activado' && currentTime - lastRiegoTime > CHECK_INTERVAL) {
-                    await guardarRegistro(data.sensors);
-                    lastRiegoTime = currentTime;
+                    // Registro de activación de riego
+                    if (Riego === 'Activado' && currentTime - lastRiegoTime > CHECK_INTERVAL) {
+                        await guardarRegistro(data.sensors);
+                        lastRiegoTime = currentTime;
+                    }
+                } catch (error) {
+                    console.error('Error al analizar el mensaje JSON:', error);
+                    console.error('Mensaje recibido:', mensaje);
                 }
             });
 
@@ -112,8 +122,13 @@ function configure(s) {
                 try {
                     const data = JSON.parse(mensaje);
                     console.log(data);
-                    esp32Socket.send(mensaje);
+                    if (esp32Socket && esp32Socket.readyState === WebSocket.OPEN) {
+                        esp32Socket.send(mensaje);
+                    } else {
+                        console.error('ESP32 socket is not open');
+                    }
                 } catch (error) {
+                    console.error('Error al analizar el mensaje JSON:', error);
                     const errorResponse = { error: 'No se pudo analizar el mensaje como JSON' };
                     ws.send(JSON.stringify(errorResponse));
                 }

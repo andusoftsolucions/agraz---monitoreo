@@ -13,8 +13,7 @@ $(document).ready(function() {
       password: contraseña
     };
     
-    console.log('Usuario:', correo);
-    console.log('Contraseña:', contraseña);
+    
     
     fetch('https://agrazmonitoreoroca.onrender.com/user/login', {
       method: 'POST',
