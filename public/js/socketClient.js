@@ -47,7 +47,7 @@ function initConnection() {
   });
 
   ws.addEventListener('message', (event) => {
-    const message = JSON.parse(event.data);
+    const data = JSON.parse(event.data);
     console.log('Message from server:', message);
     // Generamos el evento personalizado "websocketData"
     var websocketDataEvent = new CustomEvent("websocketData", { detail: data });
