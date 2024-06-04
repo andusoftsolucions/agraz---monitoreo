@@ -1,12 +1,21 @@
-// archivo: public/js/socketclient.js
 var ws; // Variable para almacenar la instancia de WebSocket
 var isConnectionEstablished = false; // Bandera para verificar si la conexión ya se estableció
 
 function closeConnection() {
-  if (!!ws) {
+  if (ws) {
     ws.close();
   }
 }
+
+function getCookie(name) {
+  // Crea una expresión regular que busca la cookie con el nombre especificado
+  let cookiePattern = new RegExp('(?:^|; )' + name + '=([^;]*)');
+  // Usa la expresión regular para buscar en el string de cookies
+  let cookieMatch = document.cookie.match(cookiePattern);
+  // Si encuentra una coincidencia, devuelve el valor de la cookie; de lo contrario, devuelve null
+  return cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
+}
+
 
 function initConnection() {
   if (isConnectionEstablished) {
@@ -14,12 +23,17 @@ function initConnection() {
   }
 
   closeConnection();
-  const token = localStorage.getItem('token');
+  const token = getCookie('token');
 
-  ws = new WebSocket(`wss://agrazmonitoreoroca.onrender.com${!token ? '' : `/?at=${token}`}`);
+  if (!token) {
+    console.error('Token not found in cookies');
+    return;
+  }
+
+  ws = new WebSocket(`wss://agrazmonitoreoroca.onrender.com/?at=${token}`);
 
   ws.addEventListener('error', () => {
-    showMessage('WebSocket error');
+    console.error('WebSocket error');
   });
 
   ws.addEventListener('open', () => {
@@ -28,30 +42,16 @@ function initConnection() {
   });
 
   ws.addEventListener('close', () => {
-    showMessage('WebSocket connection closed');
-    isConnectionEstablished = false; // Actualizar la bandera cuando la conexión se cierra
-
-    if (ws.pingTimeout) {
-      clearTimeout(ws.pingTimeout);
-    }
+    console.log('WebSocket connection closed');
+    isConnectionEstablished = false; // Actualizar la bandera para indicar que la conexión se cerró
   });
 
-  ws.addEventListener('message', (message) => {
-    const data = JSON.parse(message.data);
-    console.log('Datos de sensores recibidos:', data.sensors);
-    
-    // Generamos el evento personalizado "websocketData"
-    var websocketDataEvent = new CustomEvent("websocketData", { detail: data });
-    document.dispatchEvent(websocketDataEvent);
+  ws.addEventListener('message', (event) => {
+    const message = JSON.parse(event.data);
+    console.log('Message from server:', message);
   });
 }
 
-function enviarMensajeWebSocket(data) {
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(data));
-  } else {
-    console.log('La conexión WebSocket no está abierta.');
-  }
-}
-
-initConnection();
+window.addEventListener('load', () => {
+  initConnection();
+});

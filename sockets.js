@@ -32,21 +32,15 @@ function configure(s) {
         const url = new URL(req.url, `ws://${req.headers.host}`);
         const at = url.searchParams.get('at');
     
-        authenticate(at).then(isValid => {
-            if (!isValid) {
-                socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-                socket.destroy();
-                return;
-            }
-    
-            wss.handleUpgrade(req, socket, head, (ws) => {
-                socket.removeListener('error', onSocketPreError);
-                wss.emit('connection', ws, req);
-            });
-        }).catch(err => {
-            console.error('Authentication error:', err);
-            socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+        if (!authenticate(at)) {
+            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
             socket.destroy();
+            return;
+        }
+    
+        wss.handleUpgrade(req, socket, head, (ws) => {
+            socket.removeListener('error', onSocketPreError);
+            wss.emit('connection', ws, req);
         });
     });
 
