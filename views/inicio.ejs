@@ -279,7 +279,7 @@
     chartData.labels.push(currentDate.toLocaleTimeString());
 
     // Agregar los nuevos datos de EC y pH a los datasets correspondientes
-    chartData.tdsData.push(data.sensors.Humidity);
+    chartData.tdsData.push(data.sensors.Humidity.toFixed(2));
     chartData.phData.push(data.sensors.ph);
 
     // Limitar la cantidad de etiquetas mostradas en los gráficos
