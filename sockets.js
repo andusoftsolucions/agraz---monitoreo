@@ -49,7 +49,7 @@ function configure(s) {
 
     // Control de notificaciones
     let lastNotificationTime = {
-        humidity: 0,
+        Humidity: 0,
         ph: 0,
         riego: 0
     };
@@ -66,25 +66,25 @@ function configure(s) {
 
         if (path === '/esp32') {
             esp32Socket = ws;
-            console.log('New ESP32 connection with token:');
+            console.log('New ESP32 connection');
             
             ws.on('message', async (mensaje) => {
                 try {
                     const data = JSON.parse(mensaje);
-                    console.log('Mensaje recibido de la ESP32:', data);
+                    // console.log('Mensaje recibido de la ESP32:', data);
                     const mensajeJSON = JSON.stringify(data);
 
                     // Enviar el mensaje a cada uno de los clientes conectados
                     webClients.forEach(client => client.send(mensajeJSON));
 
-                    const { humidity, ph, Riego } = data.sensors;
+                    const { Humidity, ph, Riego } = data.sensors;
                     const currentTime = Date.now();
 
                     // Notificaciones de humedad
-                    if ((humidity > 85 || humidity < 70) && currentTime - lastNotificationTime.humidity > NOTIFICATION_INTERVAL) {
-                        const humedadtext = `La humedad está en un valor crítico: ${humidity}`;
+                    if ((Humidity > 85 || Humidity < 70) && currentTime - lastNotificationTime.Humidity > NOTIFICATION_INTERVAL) {
+                        const humedadtext = `La humedad está en un valor crítico: ${Humidity}`;
                         await notifyAllUsers(humedadtext);
-                        lastNotificationTime.humidity = currentTime;
+                        lastNotificationTime.Humidity = currentTime;
                     }
 
                     // Notificaciones de pH
@@ -99,6 +99,13 @@ function configure(s) {
                         await guardarRegistro(data.sensors);
                         lastRiegoTime = currentTime;
                     }
+
+                    if (Riego === 'Activado' && currentTime - lastRiegoTime > CHECK_INTERVAL) {
+                        const  RiegoText = `el reigo se activo`;
+                        await notifyAllUsers(RiegoText);
+                    }
+
+
                 } catch (error) {
                     console.error('Error al analizar el mensaje JSON:', error);
                     console.error('Mensaje recibido:', mensaje);
@@ -116,11 +123,11 @@ function configure(s) {
                 try {
                     const data = JSON.parse(mensaje);
                     console.log(data);
-                    if (esp32Socket && esp32Socket.readyState === WebSocket.OPEN) {
-                        esp32Socket.send(mensaje);
-                    } else {
-                        console.error('ESP32 socket is not open');
-                    }
+                    // if (esp32Socket && esp32Socket.readyState === WebSocket.OPEN) {
+                    //     esp32Socket.send(mensaje);
+                    // } else {
+                    //     console.error('ESP32 socket is not open');
+                    // }
                 } catch (error) {
                     console.error('Error al analizar el mensaje JSON:', error);
                     const errorResponse = { error: 'No se pudo analizar el mensaje como JSON' };

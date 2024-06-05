@@ -1,6 +1,4 @@
 
-console.log("hola mundo")
-
 
 $(document).ready(function() {
   $('#btn-sing-in').click(function(e) {
@@ -27,7 +25,7 @@ $(document).ready(function() {
       // Procesar la respuesta del servidor, incluyendo el token
       var token = data.token;
       // Realizar las operaciones adicionales con el token recibido
-      console.log('Token recibido:', token);
+      // console.log('Token recibido:', token);
 
       window.location.href = '/inicio';
       
