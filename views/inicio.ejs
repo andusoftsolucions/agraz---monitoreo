@@ -75,35 +75,26 @@
   var myChart2 = null;
   var myBarChart = null;
 
-  // Función para crear la gráfica de barras
-  function createBarChart(labels, datasets, maxY) {
-    var ctx = document.getElementById('myBarChart').getContext('2d');
-    myBarChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: datasets
-      },
-      options: {
-        scales: {
-          y: {
-            min: 0,
-            max: maxY, // Establecer el valor máximo del eje Y
-            ticks: {
-              stepSize: 1
-            },
-            grid: {
-              display: false
-            }
-          },
-          x: {
-            ticks: {
-              stepSize: 2
-            }
-          }
-        }
-      }
+  // Función para convertir la fecha y hora a la zona horaria local
+  function convertirFechaLocal(fechaUTC) {
+    const fecha = new Date(fechaUTC);
+    return fecha.toLocaleString(); // Puedes ajustar el formato de fecha y hora según tus necesidades
+  }
+
+  // Función para ajustar las fechas a la zona horaria local en los datos recibidos
+  function ajustarFechas(datos) {
+    const datosAjustados = {};
+
+    Object.keys(datos).forEach(dia => {
+      datosAjustados[dia] = datos[dia].map((valor, hora) => {
+        return {
+          ...valor,
+          fecha: convertirFechaLocal(new Date(valor.fecha))
+        };
+      });
     });
+
+    return datosAjustados;
   }
 
   // Función para obtener datos del servidor según el rango seleccionado
@@ -111,7 +102,11 @@
     try {
       const response = await fetch(`/dataSensors?range=${rango}`);
       const data = await response.json();
-      return data;
+
+      // Ajustar las fechas a la zona horaria local
+      const datosAjustados = ajustarFechas(data);
+
+      return datosAjustados;
     } catch (error) {
       console.error('Error al obtener datos:', error);
       return null;
@@ -144,18 +139,18 @@
   }
 
   // Crear la gráfica de barras una vez al cargar el documento
-  document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener("DOMContentLoaded", function () {
     actualizarGrafico('hoy');
   });
 
   // Manejar clic en el botón de actualización
-  document.getElementById('actualizarButton').addEventListener('click', function() {
+  document.getElementById('actualizarButton').addEventListener('click', function () {
     var rangoSeleccionado = document.getElementById('rango').value;
     actualizarGrafico(rangoSeleccionado);
   });
 
   // Manejar la visibilidad de la página
-  document.addEventListener('visibilitychange', function() {
+  document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') {
       if (myChart1) {
         myChart1.update();
@@ -168,6 +163,38 @@
       }
     }
   });
+
+  // Función para crear la gráfica de barras
+  function createBarChart(labels, datasets, maxY) {
+    var ctx = document.getElementById('myBarChart').getContext('2d');
+    myBarChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: datasets
+      },
+      options: {
+        scales: {
+          y: {
+            min: 0,
+            max: maxY, // Establecer el valor máximo del eje Y
+            ticks: {
+              stepSize: 1
+            },
+            grid: {
+              display: false
+            }
+          },
+          x: {
+            ticks: {
+              stepSize: 2
+            }
+          }
+        }
+      }
+    });
+  }
+
 
   // inicio codigo graficos ph y humedad /////////////////////////////////
   ///////////////////////////////////////////////////////////////////////
