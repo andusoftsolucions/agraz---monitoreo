@@ -8,6 +8,12 @@ const sessionMap = new Map();
 let botInstance;
 
 function setupBot(token) {
+
+  if (botInstance) {
+    console.log("Bot ya configurado");
+    return ;
+  }
+
   const bot = new Telegraf(token);
   botInstance = bot;
 

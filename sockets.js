@@ -94,15 +94,12 @@ function configure(s) {
                         lastNotificationTime.ph = currentTime;
                     }
 
-                    // Registro de activación de riego
-                    if (Riego === 'Activado' && currentTime - lastRiegoTime > CHECK_INTERVAL) {
+                    // Registro y notificación de activación de riego
+                    if (Riego === 'Activo' && currentTime - lastRiegoTime > CHECK_INTERVAL) {
                         await guardarRegistro(data.sensors);
-                        lastRiegoTime = currentTime;
-                    }
-
-                    if (Riego === 'Activado' && currentTime - lastRiegoTime > CHECK_INTERVAL) {
-                        const  RiegoText = `el reigo se activo`;
+                        const RiegoText = `El riego se activó`;
                         await notifyAllUsers(RiegoText);
+                        lastRiegoTime = currentTime;
                     }
 
 
