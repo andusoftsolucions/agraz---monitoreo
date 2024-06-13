@@ -80,12 +80,12 @@ function configure(s) {
                     const { Humidity, ph, Riego } = data.sensors;
                     const currentTime = Date.now();
 
-                    // Notificaciones de humedad
-                    if ((Humidity > 85 || Humidity < 70) && currentTime - lastNotificationTime.Humidity > NOTIFICATION_INTERVAL) {
-                        const humedadtext = `La humedad está en un valor crítico: ${Humidity}`;
-                        await notifyAllUsers(humedadtext);
-                        lastNotificationTime.Humidity = currentTime;
-                    }
+                    // // Notificaciones de humedad
+                    // if ((Humidity > 85 || Humidity < 70) && currentTime - lastNotificationTime.Humidity > NOTIFICATION_INTERVAL) {
+                    //     const humedadtext = `La humedad está en un valor crítico: ${Humidity}`;
+                    //     await notifyAllUsers(humedadtext);
+                    //     lastNotificationTime.Humidity = currentTime;
+                    // }
 
                     // Notificaciones de pH
                     if ((ph > 8 || ph < 6) && currentTime - lastNotificationTime.ph > NOTIFICATION_INTERVAL) {

@@ -75,95 +75,6 @@
   var myChart2 = null;
   var myBarChart = null;
 
-  // Función para convertir la fecha y hora a la zona horaria local
-  function convertirFechaLocal(fechaUTC) {
-    const fecha = new Date(fechaUTC);
-    return fecha.toLocaleString(); // Puedes ajustar el formato de fecha y hora según tus necesidades
-  }
-
-  // Función para ajustar las fechas a la zona horaria local en los datos recibidos
-  function ajustarFechas(datos) {
-    const datosAjustados = {};
-
-    Object.keys(datos).forEach(dia => {
-      datosAjustados[dia] = datos[dia].map((valor, hora) => {
-        return {
-          ...valor,
-          fecha: convertirFechaLocal(new Date(valor.fecha))
-        };
-      });
-    });
-
-    return datosAjustados;
-  }
-
-  // Función para obtener datos del servidor según el rango seleccionado
-  async function obtenerDatos(rango) {
-    try {
-      const response = await fetch(`/dataSensors?range=${rango}`);
-      const data = await response.json();
-
-      // Ajustar las fechas a la zona horaria local
-      const datosAjustados = ajustarFechas(data);
-
-      return datosAjustados;
-    } catch (error) {
-      console.error('Error al obtener datos:', error);
-      return null;
-    }
-  }
-
-  // Función para actualizar la gráfica de barras según el rango seleccionado
-  async function actualizarGrafico(rango) {
-    const datos = await obtenerDatos(rango);
-
-    if (datos) {
-      const labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
-      const datasets = Object.keys(datos).map(dia => ({
-        label: dia.charAt(0).toUpperCase() + dia.slice(1),
-        data: datos[dia],
-        backgroundColor: 'rgba(75, 192, 192, 0.5)'
-      }));
-
-      // Encontrar el valor máximo en los datos
-      const maxValor = Math.max(...Object.values(datos).flat());
-
-      if (myBarChart) {
-        myBarChart.destroy();
-      }
-
-      createBarChart(labels, datasets, maxValor);
-    } else {
-      console.error('No se pudieron actualizar los datos del gráfico');
-    }
-  }
-
-  // Crear la gráfica de barras una vez al cargar el documento
-  document.addEventListener("DOMContentLoaded", function () {
-    actualizarGrafico('hoy');
-  });
-
-  // Manejar clic en el botón de actualización
-  document.getElementById('actualizarButton').addEventListener('click', function () {
-    var rangoSeleccionado = document.getElementById('rango').value;
-    actualizarGrafico(rangoSeleccionado);
-  });
-
-  // Manejar la visibilidad de la página
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible') {
-      if (myChart1) {
-        myChart1.update();
-      }
-      if (myChart2) {
-        myChart2.update();
-      }
-      if (myBarChart) {
-        myBarChart.update();
-      }
-    }
-  });
-
   // Función para crear la gráfica de barras
   function createBarChart(labels, datasets, maxY) {
     var ctx = document.getElementById('myBarChart').getContext('2d');
@@ -191,9 +102,63 @@
             }
           }
         }
-      }
+  }
     });
   }
+  // Función para obtener datos del servidor según el rango seleccionado
+  async function obtenerDatos(rango) {
+    try {
+      const response = await fetch(`/dataSensors?range=${rango}`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error al obtener datos:', error);
+      return null;
+    }
+  }
+  // Función para actualizar la gráfica de barras según el rango seleccionado
+  async function actualizarGrafico(rango) {
+    const datos = await obtenerDatos(rango);
+    if (datos) {
+      const labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+      const datasets = Object.keys(datos).map(dia => ({
+        label: dia.charAt(0).toUpperCase() + dia.slice(1),
+        data: datos[dia],
+        backgroundColor: 'rgba(75, 192, 192, 0.5)'
+      }));
+      // Encontrar el valor máximo en los datos
+      const maxValor = Math.max(...Object.values(datos).flat());
+      if (myBarChart) {
+        myBarChart.destroy();
+      }
+      createBarChart(labels, datasets, maxValor);
+    } else {
+      console.error('No se pudieron actualizar los datos del gráfico');
+    }
+  }
+  // Crear la gráfica de barras una vez al cargar el documento
+  document.addEventListener("DOMContentLoaded", function () {
+    actualizarGrafico('hoy');
+  });
+  // Manejar clic en el botón de actualización
+  document.getElementById('actualizarButton').addEventListener('click', function () {
+    var rangoSeleccionado = document.getElementById('rango').value;
+    actualizarGrafico(rangoSeleccionado);
+  });
+  // Manejar la visibilidad de la página
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+      if (myChart1) {
+        myChart1.update();
+      }
+      if (myChart2) {
+        myChart2.update();
+      }
+      if (myBarChart) {
+        myBarChart.update();
+      }
+    }
+  });
 
 
   // inicio codigo graficos ph y humedad /////////////////////////////////
