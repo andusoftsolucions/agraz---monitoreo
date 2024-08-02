@@ -120,22 +120,30 @@
   async function actualizarGrafico(rango) {
     const datos = await obtenerDatos(rango);
     if (datos) {
-      const labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
-      const datasets = Object.keys(datos).map(dia => ({
-        label: dia.charAt(0).toUpperCase() + dia.slice(1),
-        data: datos[dia],
-        backgroundColor: 'rgba(75, 192, 192, 0.5)'
-      }));
-      // Encontrar el valor máximo en los datos
-      const maxValor = Math.max(...Object.values(datos).flat());
-      if (myBarChart) {
-        myBarChart.destroy();
-      }
-      createBarChart(labels, datasets, maxValor);
+        const labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+        const colores = [
+            'rgba(75, 192, 192, 0.5)',
+            'rgba(255, 99, 132, 0.5)',
+            'rgba(54, 162, 235, 0.5)',
+            'rgba(255, 206, 86, 0.5)',
+            'rgba(153, 102, 255, 0.5)',
+            'rgba(255, 159, 64, 0.5)'
+        ];
+        const datasets = Object.keys(datos).map((dia, index) => ({
+            label: dia.charAt(0).toUpperCase() + dia.slice(1),
+            data: datos[dia],
+            backgroundColor: colores[index % colores.length]
+        }));
+        // Encontrar el valor máximo en los datos
+        const maxValor = Math.max(...Object.values(datos).flat());
+        if (myBarChart) {
+            myBarChart.destroy();
+        }
+        createBarChart(labels, datasets, maxValor);
     } else {
-      console.error('No se pudieron actualizar los datos del gráfico');
+        console.error('No se pudieron actualizar los datos del gráfico');
     }
-  }
+}
   // Crear la gráfica de barras una vez al cargar el documento
   document.addEventListener("DOMContentLoaded", function () {
     actualizarGrafico('hoy');
