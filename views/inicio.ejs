@@ -120,6 +120,9 @@
   async function actualizarGrafico(rango) {
     const datos = await obtenerDatos(rango);
     if (datos) {
+        // Imprime los datos para verificar su estructura
+        console.log('Datos obtenidos:', datos);
+
         const labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
         const colores = [
             'rgba(75, 192, 192, 0.5)',
@@ -130,15 +133,23 @@
             'rgba(153, 102, 255, 0.5)',
             'rgba(255, 159, 64, 0.5)'
         ];
+
+        // Verifica si hay más días que colores y ajusta el tamaño del arreglo de colores si es necesario
+        const numDatasets = Object.keys(datos).length;
+        if (numDatasets > colores.length) {
+            console.warn('Número de días excede la cantidad de colores. Algunos colores serán reutilizados.');
+        }
+
         const datasets = Object.keys(datos).map((dia, index) => ({
             label: dia.charAt(0).toUpperCase() + dia.slice(1),
             data: datos[dia],
             backgroundColor: colores[index % colores.length]
         }));
+
         // Encontrar el valor máximo en los datos
         const maxValor = Math.max(...Object.values(datos).flat());
-        if (myBarChart) {
-            myBarChart.destroy();
+        if (window.myBarChart) {
+            window.myBarChart.destroy();
         }
         createBarChart(labels, datasets, maxValor);
     } else {
