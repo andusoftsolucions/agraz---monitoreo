@@ -121,11 +121,23 @@
     const datos = await obtenerDatos(rango);
     if (datos) {
       const labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
-      const datasets = Object.keys(datos).map(dia => ({
-        label: dia.charAt(0).toUpperCase() + dia.slice(1),
-        data: datos[dia],
-        backgroundColor: 'rgba(75, 192, 192, 0.5)'
-      }));
+    
+    // Define un array de colores
+    const colores = [
+      'rgba(75, 192, 192, 0.5)',   // Verde agua
+      'rgba(54, 162, 235, 0.5)',   // Azul
+      'rgba(255, 206, 86, 0.5)',   // Amarillo
+      'rgba(255, 99, 132, 0.5)',   // Rojo
+      'rgba(153, 102, 255, 0.5)',  // Púrpura
+      'rgba(255, 159, 64, 0.5)'    // Naranja
+    ];
+    
+    const datasets = Object.keys(datos).map((dia, index) => ({
+      label: dia.charAt(0).toUpperCase() + dia.slice(1),
+      data: datos[dia],
+      // Asigna un color diferente a cada dataset usando el índice
+      backgroundColor: colores[index % colores.length]
+    }));
       // Encontrar el valor máximo en los datos
       const maxValor = Math.max(...Object.values(datos).flat());
       if (myBarChart) {
