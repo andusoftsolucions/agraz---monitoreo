@@ -58,7 +58,7 @@ function configure(s) {
     // Control de almacenamiento de registros
     let lastRiegoTime = 0;
     const RIEGO_DURATION = 30 * 60 * 1000; // 30 minutos en milisegundos
-    const CHECK_INTERVAL = 35 * 60 * 1000; // 35 minutos en milisegundos
+    const CHECK_INTERVAL = 40 * 60 * 1000; // 35 minutos en milisegundos
 
     wss.on('connection', (ws, req) => {
         const url = new URL(req.url, `ws://${req.headers.host}`);
@@ -81,18 +81,18 @@ function configure(s) {
                     const currentTime = Date.now();
 
                     // // Notificaciones de humedad
-                    if ((Humidity > 85 || Humidity < 70) && currentTime - lastNotificationTime.Humidity > NOTIFICATION_INTERVAL) {
-                        const humedadtext = `La humedad está en un valor crítico: ${Humidity}`;
-                        await notifyAllUsers(humedadtext);
-                        lastNotificationTime.Humidity = currentTime;
-                    }
+                    // if ((Humidity > 85 || Humidity < 70) && currentTime - lastNotificationTime.Humidity > NOTIFICATION_INTERVAL) {
+                    //     const humedadtext = `La humedad está en un valor crítico: ${Humidity}`;
+                    //     await notifyAllUsers(humedadtext);
+                    //     lastNotificationTime.Humidity = currentTime;
+                    // }
 
-                    // Notificaciones de pH
-                    if ((ph > 8 || ph < 6) && currentTime - lastNotificationTime.ph > NOTIFICATION_INTERVAL) {
-                        const phtext = `El pH está en un valor crítico: ${ph}`;
-                        await notifyAllUsers(phtext);
-                        lastNotificationTime.ph = currentTime;
-                    }
+                    // // Notificaciones de pH
+                    // if ((ph > 8 || ph < 6) && currentTime - lastNotificationTime.ph > NOTIFICATION_INTERVAL) {
+                    //     const phtext = `El pH está en un valor crítico: ${ph}`;
+                    //     await notifyAllUsers(phtext);
+                    //     lastNotificationTime.ph = currentTime;
+                    // }
 
                     // Registro y notificación de activación de riego
                     if (Riego === 'Activo' && currentTime - lastRiegoTime > CHECK_INTERVAL) {
