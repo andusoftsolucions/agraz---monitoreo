@@ -718,7 +718,13 @@ img {
 }
 
 .mb-20 {
-  margin-bottom: 20px;
+  margin-bottom: clamp(1rem, 2vw, 3rem); /* Se ajusta entre 16px y 48px */
+}
+.mb-10 {
+  margin-bottom: clamp(0.5rem, 1.5vw, 2rem);
+}
+.mb-5 {
+  margin-bottom: clamp(0.25rem, 1vw, 1.5rem);
 }
 
 .p-relative {

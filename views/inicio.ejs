@@ -1,59 +1,75 @@
 <div class="container">
-  <div class="row stat-cards">
-    <div class="col-md-6 col-xl-3">
-      <article class="stat-cards-item">
-        <div class="stat-cards-icon primary">
-          <i data-feather="feather" aria-hidden="true"></i>
-        </div>
-        <div class="stat-cards-info">
-          <p class="stat-cards-info__num">Indicador PH</p>
-          <p class="stat-cards-info__title" id="ph"></p>
-        </div>
-      </article>
-    </div>
-    <div class="col-md-6 col-xl-3">
-      <article class="stat-cards-item">
-        <div class="stat-cards-icon warning">
-          <i data-feather="droplet" aria-hidden="true"></i>
-        </div>
-        <div class="stat-cards-info">
-          <p class="stat-cards-info__num">Humedad</p>
-          <p class="stat-cards-info__title" id="humidity"></p>
-        </div>
-      </article>
-    </div>
-    <div class="col-md-6 col-xl-3">
-      <article class="stat-cards-item">
-        <div class="stat-cards-icon purple">
-          <i data-feather="alert-circle" aria-hidden="true"></i>
-        </div>
-        <div class="stat-cards-info">
-          <p class="stat-cards-info__num">Nivel Tanque</p>
-          <p class="stat-cards-info__title" id="nivel"></p>
-        </div>
-      </article>
-    </div>
-    <div class="col-md-6 col-xl-3">
-      <article class="stat-cards-item">
-        <div class="stat-cards-icon success">
-          <i data-feather="activity" aria-hidden="true"></i>
-        </div>
-        <div class="stat-cards-info">
-          <p class="stat-cards-info__num">Riego</p>
-          <p class="stat-cards-info__title" id="riego"></p>
-        </div>
-      </article>
-    </div>
-  </div>
   <div class="row">
-    <div class="col-lg-9">
-      <div class="chart">
+    <!-- Columna izquierda: Variables -->
+    <div class="col-md-6 col-lg-3 d-flex flex-column">
+      <div class="row stat-cards">
+        <div class="col-12 mb-20">
+          <article class="stat-cards-item">
+            <div class="stat-cards-icon primary">
+              <i data-feather="feather" aria-hidden="true"></i>
+            </div>
+            <div class="stat-cards-info">
+              <p class="stat-cards-info__num">Indicador PH</p>
+              <p class="stat-cards-info__title" id="ph"></p>
+            </div>
+          </article>
+        </div>
+        <div class="col-12 mb-20">
+          <article class="stat-cards-item">
+            <div class="stat-cards-icon warning">
+              <i data-feather="droplet" aria-hidden="true"></i>
+            </div>
+            <div class="stat-cards-info">
+              <p class="stat-cards-info__num">Humedad</p>
+              <p class="stat-cards-info__title" id="humidity"></p>
+            </div>
+          </article>
+        </div>
+        <div class="col-12 mb-20">
+          <article class="stat-cards-item">
+            <div class="stat-cards-icon purple">
+              <i data-feather="alert-circle" aria-hidden="true"></i>
+            </div>
+            <div class="stat-cards-info">
+              <p class="stat-cards-info__num">Nivel Tanque</p>
+              <p class="stat-cards-info__title" id="nivel"></p>
+            </div>
+          </article>
+        </div>
+        <div class="col-12 mb-20">
+          <article class="stat-cards-item">
+            <div class="stat-cards-icon success">
+              <i data-feather="activity" aria-hidden="true"></i>
+            </div>
+            <div class="stat-cards-info">
+              <p class="stat-cards-info__num">Riego</p>
+              <p class="stat-cards-info__title" id="riego"></p>
+            </div>
+          </article>
+        </div>
+        <div class="col-12 mb-20">
+          <article class="stat-cards-item">
+            <div class="stat-cards-icon warning">
+              <i data-feather="thermometer" aria-hidden="true"></i>
+            </div>
+            <div class="stat-cards-info">
+              <p class="stat-cards-info__num">Temperatura</p>
+              <p class="stat-cards-info__title" id="temperature"></p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna derecha: Gráficas -->
+    <div class="col-md-6 col-lg-9">
+      <div class="chart mb-3">
         <canvas id="myChart" aria-label="Site statistics" role="img"></canvas>
       </div>
-      <div class="chart">
+      <div class="chart mb-3">
         <canvas id="myChart1" aria-label="Site statistics" role="img"></canvas>
       </div>
-      <div class="chart">
+      <div class="chart mb-3">
         <canvas id="myBarChart" aria-label="Site statistics" role="img"></canvas>
         <div id="SelectorDataSensor">
           <label for="rango">Selecciona el rango de consulta: </label>
@@ -68,6 +84,7 @@
     </div>
   </div>
 </div>
+
 
 <script>
   // Variables para los gráficos
@@ -92,6 +109,13 @@
             ticks: {
               stepSize: 1
             },
+            title: {
+                        display: true,
+                        text: 'Hora del día', // Etiqueta del eje X
+                        font: {
+                            size: 14
+                        }
+                    },
             grid: {
               display: false
             }
@@ -270,14 +294,16 @@
     const data = event.detail;
     const humedadElemento = document.querySelector('#humidity');
     const nielElemento = document.querySelector('#nivel');
-    const temperaturaAmbte = document.querySelector('#ph');
+    const Phnumero = document.querySelector('#ph');
     const RiegoEstado = document.querySelector('#riego');
+    const TemperaturaAmbiente = document.querySelector('#temperature');
 
     // Actualizar los valores en el elemento HTML
-    temperaturaAmbte.textContent = `${data.sensors.ph.toFixed(2)}`;
+    Phnumero.textContent = `${data.sensors.ph.toFixed(2)}`;
     humedadElemento.textContent = `${data.sensors.Humidity} %`;
     nielElemento.textContent = `${data.sensors.Level}`;
     RiegoEstado.textContent = `${data.sensors.Riego}`;
+    TemperaturaAmbiente.textContent = `${data.sensors.temperaturaAmbiente} °C`;
 
     const currentDate = new Date();
     chartData.labels.push(currentDate.toLocaleTimeString());
