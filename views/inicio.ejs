@@ -303,7 +303,7 @@
     humedadElemento.textContent = `${data.sensors.Humidity} %`;
     nielElemento.textContent = `${data.sensors.Level}`;
     RiegoEstado.textContent = `${data.sensors.Riego}`;
-    TemperaturaAmbiente.textContent = `${data.sensors.temperaturaAmbiente} °C`;
+    TemperaturaAmbiente.textContent = `${data.sensors.temperaturaAmbiente.toFixed(2)} °C`;
 
     const currentDate = new Date();
     chartData.labels.push(currentDate.toLocaleTimeString());
