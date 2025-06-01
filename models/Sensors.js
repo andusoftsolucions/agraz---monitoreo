@@ -9,6 +9,7 @@ const mensajeSchema = new Schema({
     Humidity: Number,
     Level: String,
     Riego: String,
+    temperaturaAmbiente: Number
   },
   fecha: {
     type: Date,
