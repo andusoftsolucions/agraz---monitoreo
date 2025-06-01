@@ -21,6 +21,7 @@ exports.register = async (req, res) => {
     email,
     password: sha256(password + process.env.SALT),
     chat,
+    farmId // Assuming FARM_ID is set in your environment variables
   });
 
   await user.save();

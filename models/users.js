@@ -20,6 +20,11 @@ const userSchema = new Schema({
     type: String,
     unique : true
   },
+  farmId: {
+    type: String,
+    required: true 
+  }
+  
 });
 
 // Crear y exportar el modelo de usuario

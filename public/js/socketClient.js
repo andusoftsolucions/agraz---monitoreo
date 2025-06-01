@@ -30,8 +30,8 @@ function initConnection() {
     return;
   }
 
-  ws = new WebSocket(`wss://agrazmonitoreoroca.onrender.com/?at=${token}`);
-
+  // ws = new WebSocket(`wss://agrazmonitoreoroca.onrender.com/?at=${token}`);
+  ws = new WebSocket(`ws://localhost:3000/?at=${token}`);
   ws.addEventListener('error', () => {
     console.error('WebSocket error');
   });
