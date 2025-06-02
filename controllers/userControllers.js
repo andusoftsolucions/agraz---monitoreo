@@ -5,7 +5,11 @@ const crypto = require('crypto');
 const enviarCorreoRecuperacion = require('../midellwares/resetPassword');
 
 exports.register = async (req, res) => {
+<<<<<<< HEAD
   const { name, email, password, chat, farmId} = req.body;
+=======
+  const { name, email, password, chat, farmId } = req.body;
+>>>>>>> c996198 (manejo de clientes websockects)
 
   const emailRegex = /@gmail.com|@yahoo.com|@hotmail.com|@live.com/;
 
@@ -35,6 +39,7 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+  console.log(email,password);
   const user = await User.findOne({
     email,
     password: sha256(password + process.env.SALT),
@@ -48,6 +53,12 @@ exports.login = async (req, res) => {
   res.cookie('token', token, { 
     httpOnly: false, 
     sameSite: 'None', 
+    secure: true 
+  });
+
+  res.cookie('farmId', user.farmId, { 
+    httpOnly: false,
+    sameSite: 'None',
     secure: true 
   });
 

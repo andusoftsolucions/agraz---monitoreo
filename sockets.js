@@ -60,84 +60,119 @@ function configure(s) {
     const RIEGO_DURATION = 30 * 60 * 1000; // 30 minutos en milisegundos
     const CHECK_INTERVAL = 40 * 60 * 1000; // 35 minutos en milisegundos
 
-    wss.on('connection', (ws, req) => {
-        const url = new URL(req.url, `ws://${req.headers.host}`);
-        const path = url.pathname;
+// Estas líneas van al inicio de tu archivo, fuera de la función 'configure'.
+const esp32Sockets = new Map(); // Para guardar { 'idGranja': WebSocketDeESP32 }
+const farmSubscribers = new Map(); // Para guardar { 'idGranja': Set<WebSocketDeClienteWeb> }
 
-        if (path === '/esp32') {
-            esp32Socket = ws;
-            console.log('New ESP32 connection');
-            
+wss.on('connection', (ws, req) => {
+    const url = new URL(req.url, `ws://${req.headers.host}`);
+    const path = url.pathname;
+    
+    
+    const idGranja = url.searchParams.get('farmId'); 
+
+    if (path === '/esp32') {
+        
+        if (idGranja) {
+            esp32Sockets.set(idGranja, ws);
+            console.log(`Nueva conexión ESP32 para ID de Granja: ${idGranja}`);
+
             ws.on('message', async (mensaje) => {
                 try {
                     const data = JSON.parse(mensaje);
-                    // console.log('Mensaje recibido de la ESP32:', data);
-                    const mensajeJSON = JSON.stringify(data);
+                    const subscribers = farmSubscribers.get(idGranja);
+                    if (subscribers) {
+                        const mensajeJSON = JSON.stringify(data);
+                        subscribers.forEach(client => {
+                            if (client.readyState === ws.OPEN) {
+                                client.send(mensajeJSON);
+                            }
+                        });
+                    }
 
-                    // Enviar el mensaje a cada uno de los clientes conectados
-                    webClients.forEach(client => client.send(mensajeJSON));
-
+                    
                     const { Humidity, ph, Riego } = data.sensors;
                     const currentTime = Date.now();
-
-                    // // Notificaciones de humedad
-                    // if ((Humidity > 85 || Humidity < 70) && currentTime - lastNotificationTime.Humidity > NOTIFICATION_INTERVAL) {
-                    //     const humedadtext = `La humedad está en un valor crítico: ${Humidity}`;
-                    //     await notifyAllUsers(humedadtext);
-                    //     lastNotificationTime.Humidity = currentTime;
-                    // }
-
-                    // // Notificaciones de pH
-                    // if ((ph > 8 || ph < 6) && currentTime - lastNotificationTime.ph > NOTIFICATION_INTERVAL) {
-                    //     const phtext = `El pH está en un valor crítico: ${ph}`;
-                    //     await notifyAllUsers(phtext);
-                    //     lastNotificationTime.ph = currentTime;
-                    // }
-
-                    // Registro y notificación de activación de riego
                     if (Riego === 'Activo' && currentTime - lastRiegoTime > CHECK_INTERVAL) {
                         await guardarRegistro(data.sensors);
-                        const RiegoText = `El riego se activó`;
+                        const RiegoText = `El riego se activó en la granja ${idGranja}`; // Mensaje mejorado
                         await notifyAllUsers(RiegoText);
                         lastRiegoTime = currentTime;
                     }
 
-
                 } catch (error) {
-                    console.error('Error al analizar el mensaje JSON:', error);
+                    console.error('Error al analizar el mensaje JSON de ESP32:', error);
                     console.error('Mensaje recibido:', mensaje);
                 }
             });
 
             ws.on('close', () => {
-                console.log('Connection closed');
+                console.log(`Conexión ESP32 cerrada para ID de Granja: ${idGranja}`);
+                esp32Sockets.delete(idGranja); // Eliminar la ESP32 del mapa
             });
         } else {
-            webClients.add(ws);
-            console.log('New web client connection');
-
-            ws.on('message', (mensaje) => {
-                try {
-                    const data = JSON.parse(mensaje);
-                    console.log(data);
-                    // if (esp32Socket && esp32Socket.readyState === WebSocket.OPEN) {
-                    //     esp32Socket.send(mensaje);
-                    // } else {
-                    //     console.error('ESP32 socket is not open');
-                    // }
-                } catch (error) {
-                    console.error('Error al analizar el mensaje JSON:', error);
-                    const errorResponse = { error: 'No se pudo analizar el mensaje como JSON' };
-                    ws.send(JSON.stringify(errorResponse));
-                }
-            });
-
-            ws.on('close', () => {
-                console.log('Connection closed');
-                webClients.delete(ws);
-            });
+            console.warn('ESP32 se conectó sin un "idGranja". Cerrando conexión.');
+            ws.close(1008, 'ID de Granja requerido');
         }
-    });
+        
+    } 
+    else if (path === '/clienteweb') {
+        
+        if (idGranja) {
+            if (!farmSubscribers.has(idGranja)) {
+                farmSubscribers.set(idGranja, new Set());
+            }
+            farmSubscribers.get(idGranja).add(ws);
+            console.log(`Nuevo cliente web conectado para ID de Granja: ${idGranja}. Total suscriptores: ${farmSubscribers.get(idGranja).size}`);
+        } else {
+            console.warn('Cliente web se conectó sin un "idGranja". Cerrando conexión.');
+            ws.close(1008, 'ID de Granja requerido');
+        }
+
+        ws.on('message', (mensaje) => {
+            try {
+                const data = JSON.parse(mensaje);
+                console.log(`Mensaje recibido de cliente web para granja ${idGranja}:`, data);
+
+                // Reenviar comando a la ESP32 específica
+                if (esp32Sockets.has(idGranja)) {
+                    const esp32 = esp32Sockets.get(idGranja);
+                    if (esp32.readyState === ws.OPEN) {
+                        esp32.send(mensaje);
+                        console.log(`Mensaje reenviado a ESP32 [${idGranja}].`);
+                    } else {
+                        console.error(`Socket de ESP32 para ID de Granja ${idGranja} no está abierto.`);
+                        ws.send(JSON.stringify({ error: `ESP32 para ID de Granja ${idGranja} no está conectada.` }));
+                    }
+                } else {
+                    console.warn(`No se encontró ESP32 para ID de Granja: ${idGranja}`);
+                    ws.send(JSON.stringify({ error: `No hay ESP32 conectada para ID de Granja ${idGranja}` }));
+                }
+
+            } catch (error) {
+                console.error('Error al analizar el mensaje JSON de cliente web:', error);
+                const errorResponse = { error: 'No se pudo analizar el mensaje como JSON' };
+                ws.send(JSON.stringify(errorResponse));
+            }
+        });
+
+        ws.on('close', () => {
+            console.log(`Conexión de cliente web cerrada para ID de Granja: ${idGranja}`);
+            if (idGranja && farmSubscribers.has(idGranja)) {
+                farmSubscribers.get(idGranja).delete(ws);
+                if (farmSubscribers.get(idGranja).size === 0) {
+                    farmSubscribers.delete(idGranja); 
+                }
+            }
+        });
+        
+    } else {
+        // ... (manejo de rutas no reconocidas)
+        console.warn(`Ruta WebSocket no reconocida: ${path}. Enviando error y cerrando conexión.`);
+        ws.send(JSON.stringify({ error: 'Ruta WebSocket no reconocida', path: path }));
+        ws.close(1003, 'Ruta no reconocida');
+    }
+});
 }
 
 async function notifyAllUsers(message) {

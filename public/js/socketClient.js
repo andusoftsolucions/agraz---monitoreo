@@ -1,62 +1,62 @@
-var ws; // Variable para almacenar la instancia de WebSocket
-var isConnectionEstablished = false; // Bandera para verificar si la conexión ya se estableció
+let ws; // Instancia del WebSocket
+let isConnectionEstablished = false; // Bandera de conexión
 
 function closeConnection() {
   if (ws) {
     ws.close();
+    ws = null;
   }
 }
 
 function getCookie(name) {
-  // Crea una expresión regular que busca la cookie con el nombre especificado
-  let cookiePattern = new RegExp('(?:^|; )' + name + '=([^;]*)');
-  // Usa la expresión regular para buscar en el string de cookies
-  let cookieMatch = document.cookie.match(cookiePattern);
-  // Si encuentra una coincidencia, devuelve el valor de la cookie; de lo contrario, devuelve null
-  return cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
-
 function initConnection() {
-  if (isConnectionEstablished) {
-    return; // No intentar establecer una nueva conexión si ya se ha establecido una
-  }
+  if (isConnectionEstablished) return;
 
   closeConnection();
+
   const token = getCookie('token');
+  const farmId = getCookie('farmId');
 
   if (!token) {
     console.error('Token not found in cookies');
     return;
   }
 
-  // ws = new WebSocket(`wss://agrazmonitoreoroca.onrender.com/?at=${token}`);
-  ws = new WebSocket(`ws://localhost:3000/?at=${token}`);
-  ws.addEventListener('error', () => {
-    console.error('WebSocket error');
-  });
+  if (!farmId) {
+    console.warn('farmId not found in cookies');
+  }
+
+  const wsUrl = `ws://localhost:3000/clienteweb?at=${token}&farmId=${farmId}`;
+  ws = new WebSocket(wsUrl);
 
   ws.addEventListener('open', () => {
-    console.log('WebSocket connection established');
-    isConnectionEstablished = true; // Actualizar la bandera para indicar que la conexión se estableció
+    console.log('✅ WebSocket connection established');
+    isConnectionEstablished = true;
+  });
+
+  ws.addEventListener('error', (err) => {
+    console.error('❌ WebSocket error', err);
   });
 
   ws.addEventListener('close', () => {
-    console.log('WebSocket connection closed');
-    isConnectionEstablished = false; // Actualizar la bandera para indicar que la conexión se cerró
+    console.warn('🔌 WebSocket connection closed');
+    isConnectionEstablished = false;
+    ws = null;
   });
 
   ws.addEventListener('message', (event) => {
-    const data = JSON.parse(event.data);
-    // console.log('Message from server:', data);
-    // Generamos el evento personalizado "websocketData"
-    var websocketDataEvent = new CustomEvent("websocketData", { detail: data });
-    document.dispatchEvent(websocketDataEvent);
+    try {
+      const data = JSON.parse(event.data);
+      const customEvent = new CustomEvent('websocketData', { detail: data });
+      document.dispatchEvent(customEvent);
+    } catch (e) {
+      console.error('Error parsing WebSocket message', e);
+    }
   });
-
-
 }
 
-window.addEventListener('load', () => {
-  initConnection();
-});
+window.addEventListener('load', initConnection);
