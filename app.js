@@ -32,6 +32,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(require("cors")());
 
 //Bring in the routes
+app.get('/resetpass', (req, res) => {
+  res.render('resetpass', { layout: false })
+});
+
 app.get('/login', (req, res) => {
   res.render('login', { layout: false });
 });

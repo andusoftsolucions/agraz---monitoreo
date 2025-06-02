@@ -7,6 +7,7 @@ const vistaControl= (req,res)=>{
 const vistaAdministrar = (req,res)=>{
     res.render('administrar');
 }
+
 module.exports= {
     vistaInicio,
     vistaControl,

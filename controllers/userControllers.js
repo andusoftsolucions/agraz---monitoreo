@@ -1,9 +1,11 @@
 const User = require('../models/users');
 const sha256 = require("js-sha256");
 const jwt = require("jwt-then");
+const crypto = require('crypto');
+const enviarCorreoRecuperacion = require('../midellwares/resetPassword');
 
 exports.register = async (req, res) => {
-  const { name, email, password, chat } = req.body;
+  const { name, email, password, chat, farmId} = req.body;
 
   const emailRegex = /@gmail.com|@yahoo.com|@hotmail.com|@live.com/;
 
@@ -71,3 +73,75 @@ exports.getUsersWithChatIds = async (req, res) => {
   }
 };
 
+
+exports.requestPasswordReset = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'Correo no registrado en la base de datos' });
+
+    const token = Math.floor(100000 + Math.random() * 900000).toString(); // 6 dígitos
+    const expires = Date.now() + 1000 * 60 * 15;
+    user.resetToken = token;
+    user.resetTokenExpiration = expires;
+    await user.save();
+
+    await enviarCorreoRecuperacion(email, token);
+
+    res.json({ success:true, message: 'Token de recuperación enviado por correo.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error en la solicitud', error });
+  }
+};
+exports.updatePassword = async (req, res) => {
+  try {
+    const {token, newPassword } = req.body;
+
+    if (!newPassword) {
+      return res.status(400).json({ message: 'nueva contraseña requeridos.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres.' });
+    }
+
+    const user = await User.findOne({ resetToken: token, resetTokenExpiration: { $gt: Date.now() } });
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado.' });
+    }
+
+    user.password = sha256(newPassword + process.env.SALT);
+    user.resetToken = undefined;
+    user.resetTokenExpiration = undefined;
+
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Contraseña actualizada exitosamente.' });
+  } catch (error) {
+    console.error('Error actualizando la contraseña:', error);
+    res.status(500).json({ message: 'Error interno del servidor.' });
+  }
+};
+
+
+// GET o POST según prefieras (POST si quieres seguridad extra)
+exports.verifyResetToken = async (req, res) => {
+  const { token } = req.body;
+
+  try {
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpiration: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Token inválido o expirado.' });
+    }
+
+    res.status(200).json({valid:true, message: 'Token válido. Puedes proceder a cambiar la contraseña.' });
+  } catch (error) {
+    console.error('Error al verificar el token:', error);
+    res.status(500).json({ message: 'Error interno del servidor.' });
+  }
+};

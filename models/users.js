@@ -23,8 +23,15 @@ const userSchema = new Schema({
   farmId: {
     type: String,
     required: true 
+  },
+  resetToken: {
+    type: String,
+    required: false
+  },
+  resetTokenExpiration: {
+    type: Date,
+    required: false
   }
-  
 });
 
 // Crear y exportar el modelo de usuario
