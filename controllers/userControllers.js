@@ -5,11 +5,7 @@ const crypto = require('crypto');
 const enviarCorreoRecuperacion = require('../midellwares/resetPassword');
 
 exports.register = async (req, res) => {
-<<<<<<< HEAD
   const { name, email, password, chat, farmId} = req.body;
-=======
-  const { name, email, password, chat, farmId } = req.body;
->>>>>>> c996198 (manejo de clientes websockects)
 
   const emailRegex = /@gmail.com|@yahoo.com|@hotmail.com|@live.com/;
 
